@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: unfviewer-api
+    runtime: docker
+    dockerfilePath: backend/Dockerfile
+    dockerContext: .
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true
+      - key: ENVIRONMENT
+        value: production
+      - key: COOKIE_SECURE
+        value: "true"
+      - key: ALLOWED_ORIGINS
+        value: https://unfviewer.vercel.app   # update with your Vercel URL
+      - key: INSTAGRAM_PROXY
+        sync: false   # set manually in Render dashboard — residential proxy URL
