@@ -11,6 +11,7 @@ interface Props {
   loading: boolean;
   error: string;
   savedUsername?: string;
+  ipBanned?: boolean;
 }
 
 export default function LoginForm({
@@ -20,8 +21,13 @@ export default function LoginForm({
   loading,
   error,
   savedUsername = "",
+  ipBanned = false,
 }: Props) {
-  const [mode, setMode] = useState<LoginMode>("password");
+  const [mode, setMode] = useState<LoginMode>(ipBanned ? "cookie" : "password");
+
+  useEffect(() => {
+    if (ipBanned) setMode("cookie");
+  }, [ipBanned]);
   const [username, setUsername] = useState(savedUsername);
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(!!savedUsername);
@@ -61,6 +67,19 @@ export default function LoginForm({
           Descubra quem não segue você de volta
         </p>
       </div>
+
+      {ipBanned && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800 space-y-1">
+          <p className="font-semibold">Login com senha bloqueado pelo Instagram</p>
+          <p>O IP deste servidor está na lista negra do Instagram. Use o <strong>Cookie de sessão</strong> abaixo:</p>
+          <ol className="list-decimal list-inside space-y-0.5 text-amber-700">
+            <li>Abra <strong>instagram.com</strong> no navegador e faça login</li>
+            <li>Pressione <strong>F12</strong> → aba <strong>Application</strong></li>
+            <li>Cookies → <strong>https://www.instagram.com</strong></li>
+            <li>Copie o valor de <strong>sessionid</strong> e cole abaixo</li>
+          </ol>
+        </div>
+      )}
 
       {/* Mode tabs */}
       <div className="flex rounded-lg border border-gray-200 overflow-hidden text-sm font-medium">

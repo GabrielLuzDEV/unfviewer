@@ -12,6 +12,7 @@ export default function Home() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [ipBanned, setIpBanned] = useState(false);
   const [needs2FA, setNeeds2FA] = useState(false);
   const [twoFAMethod, setTwoFAMethod] = useState<TwoFAMethod>("sms");
   const [code2FA, setCode2FA] = useState("");
@@ -40,7 +41,11 @@ export default function Home() {
         body: JSON.stringify({ username, password }),
       });
       const data = await res.json();
-      if (!res.ok) { setError(data.detail ?? "Erro ao fazer login."); return; }
+      if (!res.ok) {
+        if (res.status === 403) setIpBanned(true);
+        setError(data.detail ?? "Erro ao fazer login.");
+        return;
+      }
       if (rememberMe) localStorage.setItem("remembered_username", username);
       else localStorage.removeItem("remembered_username");
       if (data.awaiting_2fa) { setNeeds2FA(true); return; }

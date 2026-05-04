@@ -86,6 +86,15 @@ async def login(request: Request, req: LoginRequest, response: Response):
         return SessionInfo(username=req.username, tier="free", awaiting_2fa=True)
     except BadPassword as e:
         log.warning("[login] bad password for %s: %s", req.username, e)
+        if "blacklist" in str(e).lower() or "ip" in str(e).lower():
+            raise HTTPException(
+                status_code=403,
+                detail=(
+                    "O servidor do Instagram bloqueou o IP deste serviço. "
+                    "Use a aba 'Cookie de sessão' para fazer login: abra o Instagram no navegador, "
+                    "copie o cookie sessionid (F12 → Application → Cookies → instagram.com) e cole aqui."
+                ),
+            )
         raise HTTPException(status_code=401, detail="Usuário ou senha incorretos.")
     except (ChallengeRequired, CaptchaChallengeRequired, RecaptchaChallengeForm) as e:
         log.warning("[login] challenge for %s: %s", req.username, type(e).__name__)
