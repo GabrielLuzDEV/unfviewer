@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import NonFollowerList from "@/components/NonFollowerList";
 
@@ -16,6 +16,14 @@ type FetchState = "idle" | "fetching" | "done" | "error";
 const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
 export default function Dashboard() {
+  return (
+    <Suspense>
+      <DashboardContent />
+    </Suspense>
+  );
+}
+
+function DashboardContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const isExportMode = searchParams.get("mode") === "export";
