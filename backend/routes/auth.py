@@ -33,6 +33,12 @@ from backend.session_store import (
 
 log = logging.getLogger(__name__)
 
+_IP_BLOCKED_MSG = (
+    "O Instagram bloqueou o IP deste servidor. "
+    "Use a aba 'Cookie de sessão': abra o Instagram no navegador, "
+    "pressione F12 → Application → Cookies → instagram.com e copie o valor de sessionid."
+)
+
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 _COOKIE_SECURE = os.environ.get("COOKIE_SECURE", "false").lower() == "true"
@@ -85,16 +91,10 @@ async def login(request: Request, req: LoginRequest, response: Response):
         _set_session_cookie(response, sid)
         return SessionInfo(username=req.username, tier="free", awaiting_2fa=True)
     except BadPassword as e:
+        msg = str(e).lower()
         log.warning("[login] bad password for %s: %s", req.username, e)
-        if "blacklist" in str(e).lower() or "ip" in str(e).lower():
-            raise HTTPException(
-                status_code=403,
-                detail=(
-                    "O servidor do Instagram bloqueou o IP deste serviço. "
-                    "Use a aba 'Cookie de sessão' para fazer login: abra o Instagram no navegador, "
-                    "copie o cookie sessionid (F12 → Application → Cookies → instagram.com) e cole aqui."
-                ),
-            )
+        if "blacklist" in msg or "facebook" in msg:
+            raise HTTPException(status_code=403, detail=_IP_BLOCKED_MSG)
         raise HTTPException(status_code=401, detail="Usuário ou senha incorretos.")
     except (ChallengeRequired, CaptchaChallengeRequired, RecaptchaChallengeForm) as e:
         log.warning("[login] challenge for %s: %s", req.username, type(e).__name__)
@@ -107,16 +107,13 @@ async def login(request: Request, req: LoginRequest, response: Response):
         )
     except LoginRequired as e:
         log.warning("[login] login required for %s: %s", req.username, e)
-        raise HTTPException(
-            status_code=401,
-            detail="Instagram bloqueou o login automático. Tente novamente em alguns minutos.",
-        )
+        raise HTTPException(status_code=403, detail=_IP_BLOCKED_MSG)
     except UnknownError as e:
+        msg = str(e).lower()
         log.warning("[login] unknown Instagram error for %s: %s", req.username, e)
-        raise HTTPException(
-            status_code=401,
-            detail="Instagram retornou um erro desconhecido. Tente novamente.",
-        )
+        if "can't find an account" in msg or "mobile number or email" in msg:
+            raise HTTPException(status_code=403, detail=_IP_BLOCKED_MSG)
+        raise HTTPException(status_code=401, detail="Instagram retornou um erro desconhecido. Tente novamente.")
     except Exception:
         log.error("[login] unexpected error for %s:\n%s", req.username, traceback.format_exc())
         raise HTTPException(status_code=500, detail="Erro interno. Tente novamente.")
